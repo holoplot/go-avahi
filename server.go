@@ -34,6 +34,7 @@ type Server struct {
 	conn          *dbus.Conn
 	object        dbus.BusObject
 	signalChannel chan *dbus.Signal
+	quitChannel   chan bool
 
 	mutex          sync.Mutex
 	signalEmitters map[dbus.ObjectPath]SignalEmitter
@@ -101,6 +102,7 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 	c.conn = conn
 	c.object = conn.Object("org.freedesktop.Avahi", dbus.ObjectPath("/"))
 	c.signalChannel = make(chan *dbus.Signal, 10)
+	c.quitChannel = make (chan bool)
 
 	c.conn.Signal(c.signalChannel)
 	c.conn.BusObject().Call("org.freedesktop.DBus.AddMatch", 0, "type='signal',interface='org.freedesktop.Avahi.*'")
@@ -109,22 +111,40 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 
 	go func() {
 		for {
-			signal, ok := <-c.signalChannel
-			if !ok {
-				continue
-			}
-
-			c.mutex.Lock()
-			for path, obj := range c.signalEmitters {
-				if path == signal.Path {
-					obj.DispatchSignal(signal)
+			select {
+			case signal, ok := <-c.signalChannel:
+				if !ok {
+					continue
 				}
+
+				c.mutex.Lock()
+				for path, obj := range c.signalEmitters {
+					if path == signal.Path {
+						obj.DispatchSignal(signal)
+					}
+				}
+				c.mutex.Unlock()
+
+			case <-c.quitChannel:
+				return
 			}
-			c.mutex.Unlock()
 		}
 	}()
 
 	return c, nil
+}
+
+func (c *Server) Close() {
+	<-c.quitChannel
+
+	c.mutex.Lock()
+	for path, obj := range c.signalEmitters {
+		obj.free()
+		delete(c.signalEmitters, path)
+	}
+	c.mutex.Unlock()
+
+	c.conn.Close()
 }
 
 func (c *Server) signalEmitterFree(e SignalEmitter) {
