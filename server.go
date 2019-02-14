@@ -2,8 +2,9 @@ package avahi
 
 import (
 	"fmt"
-	"github.com/godbus/dbus"
 	"sync"
+
+	"github.com/godbus/dbus"
 )
 
 const (
@@ -25,8 +26,8 @@ const (
 )
 
 type SignalEmitter interface {
-	DispatchSignal(signal *dbus.Signal) error
-	GetObjectPath() dbus.ObjectPath
+	dispatchSignal(signal *dbus.Signal) error
+	getObjectPath() dbus.ObjectPath
 	free()
 }
 
@@ -102,7 +103,7 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 	c.conn = conn
 	c.object = conn.Object("org.freedesktop.Avahi", dbus.ObjectPath("/"))
 	c.signalChannel = make(chan *dbus.Signal, 10)
-	c.quitChannel = make (chan bool)
+	c.quitChannel = make(chan bool)
 
 	c.conn.Signal(c.signalChannel)
 	c.conn.BusObject().Call("org.freedesktop.DBus.AddMatch", 0, "type='signal',interface='org.freedesktop.Avahi.*'")
@@ -120,7 +121,7 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 				c.mutex.Lock()
 				for path, obj := range c.signalEmitters {
 					if path == signal.Path {
-						obj.DispatchSignal(signal)
+						obj.dispatchSignal(signal)
 					}
 				}
 				c.mutex.Unlock()
@@ -148,7 +149,7 @@ func (c *Server) Close() {
 }
 
 func (c *Server) signalEmitterFree(e SignalEmitter) {
-	o := e.GetObjectPath()
+	o := e.getObjectPath()
 	e.free()
 
 	c.mutex.Lock()

@@ -2,6 +2,7 @@ package avahi
 
 import (
 	"fmt"
+
 	"github.com/godbus/dbus"
 )
 
@@ -29,11 +30,11 @@ func (c *ServiceBrowser) free() {
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
-func (c *ServiceBrowser) GetObjectPath() dbus.ObjectPath {
+func (c *ServiceBrowser) getObjectPath() dbus.ObjectPath {
 	return c.object.Path()
 }
 
-func (c *ServiceBrowser) DispatchSignal(signal *dbus.Signal) error {
+func (c *ServiceBrowser) dispatchSignal(signal *dbus.Signal) error {
 	if signal.Name == c.interfaceForMember("ItemNew") || signal.Name == c.interfaceForMember("ItemRemove") {
 		var service Service
 		err := dbus.Store(signal.Body, &service.Interface, &service.Protocol, &service.Name, &service.Type, &service.Domain, &service.Flags)

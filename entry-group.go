@@ -2,6 +2,7 @@ package avahi
 
 import (
 	"fmt"
+
 	"github.com/godbus/dbus"
 )
 
@@ -91,11 +92,11 @@ func (c *EntryGroup) free() {
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
-func (c *EntryGroup) GetObjectPath() dbus.ObjectPath {
+func (c *EntryGroup) getObjectPath() dbus.ObjectPath {
 	return c.object.Path()
 }
 
-func (c *EntryGroup) DispatchSignal(signal *dbus.Signal) error {
+func (c *EntryGroup) dispatchSignal(signal *dbus.Signal) error {
 	if signal.Name == c.interfaceForMember("StateChanged") {
 		var state EntryGroupState
 		err := dbus.Store(signal.Body, &state.State, &state.Error)

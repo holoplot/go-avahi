@@ -2,6 +2,7 @@ package avahi
 
 import (
 	"fmt"
+
 	"github.com/godbus/dbus"
 )
 
@@ -27,11 +28,11 @@ func (c *ServiceResolver) free() {
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
-func (c *ServiceResolver) GetObjectPath() dbus.ObjectPath {
+func (c *ServiceResolver) getObjectPath() dbus.ObjectPath {
 	return c.object.Path()
 }
 
-func (c *ServiceResolver) DispatchSignal(signal *dbus.Signal) error {
+func (c *ServiceResolver) dispatchSignal(signal *dbus.Signal) error {
 	if signal.Name == c.interfaceForMember("Found") {
 		var service Service
 		err := dbus.Store(signal.Body, &service.Interface, &service.Protocol,

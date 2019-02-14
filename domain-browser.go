@@ -2,6 +2,7 @@ package avahi
 
 import (
 	"fmt"
+
 	"github.com/godbus/dbus"
 )
 
@@ -37,11 +38,11 @@ func (c *DomainBrowser) free() {
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
-func (c *DomainBrowser) GetObjectPath() dbus.ObjectPath {
+func (c *DomainBrowser) getObjectPath() dbus.ObjectPath {
 	return c.object.Path()
 }
 
-func (c *DomainBrowser) DispatchSignal(signal *dbus.Signal) error {
+func (c *DomainBrowser) dispatchSignal(signal *dbus.Signal) error {
 	if signal.Name == c.interfaceForMember("ItemNew") || signal.Name == c.interfaceForMember("ItemRemove") {
 		var domain Domain
 		err := dbus.Store(signal.Body, &domain.Interface, &domain.Protocol, &domain.Domain, &domain.Flags)
