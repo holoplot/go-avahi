@@ -3,7 +3,7 @@ package avahi
 import (
 	"fmt"
 
-	"github.com/godbus/dbus"
+	dbus "github.com/godbus/dbus/v5"
 )
 
 type HostNameResolver struct {
