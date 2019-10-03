@@ -1,8 +1,9 @@
 package avahi
 
 import (
-	"github.com/godbus/dbus"
 	"testing"
+
+	"github.com/godbus/dbus/v5"
 )
 
 // TestNew ensures that New() works without errors.
@@ -79,6 +80,6 @@ func TestBasic(t *testing.T) {
 		t.Fatal("Entry group must initially be empty")
 	}
 
-	egc.Free()
+	egc.free()
 
 }
