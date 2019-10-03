@@ -30,8 +30,8 @@ Note that you will need to have a working Avahi installation.
 package main
 
 import (
-	"github.com/godbus/dbus"
-	"guthub.com/holoplot/go-avahi"
+	"github.com/godbus/dbus/v5"
+	"github.com/holoplot/go-avahi"
 )
 
 func main() {
