@@ -136,7 +136,7 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 }
 
 func (c *Server) Close() {
-	<-c.quitChannel
+	c.quitChannel <- true
 
 	c.mutex.Lock()
 	for path, obj := range c.signalEmitters {

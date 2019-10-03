@@ -2,6 +2,7 @@ package avahi
 
 import (
 	"testing"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -82,4 +83,28 @@ func TestBasic(t *testing.T) {
 
 	egc.free()
 
+}
+
+func TestNewClose(t *testing.T) {
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	a, err := ServerNew(conn)
+	if err != nil {
+		t.Fatal("Avahi new failed")
+	}
+
+	doneChannel := make(chan struct{})
+	go func() {
+		a.Close()
+		doneChannel <- struct{}{}
+	}()
+
+	select {
+	case <-time.After(2 * time.Second):
+		t.Fatal("Close() is deadlocked")
+	case <-doneChannel:
+	}
 }
