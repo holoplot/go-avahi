@@ -6,12 +6,14 @@ import (
 	dbus "github.com/godbus/dbus/v5"
 )
 
+// A ServiceTypeBrowser is used to browser the mDNS network for services of a specific type
 type ServiceTypeBrowser struct {
 	object        dbus.BusObject
 	AddChannel    chan ServiceType
 	RemoveChannel chan ServiceType
 }
 
+// ServiceTypeBrowserNew creates a new browser for mDNS service types
 func ServiceTypeBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceTypeBrowser, error) {
 	c := new(ServiceTypeBrowser)
 

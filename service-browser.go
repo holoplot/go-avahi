@@ -6,12 +6,14 @@ import (
 	dbus "github.com/godbus/dbus/v5"
 )
 
+// A ServiceBrowser browses for mDNS services
 type ServiceBrowser struct {
 	object        dbus.BusObject
 	AddChannel    chan Service
 	RemoveChannel chan Service
 }
 
+// ServiceBrowserNew creates a new browser for mDNS records
 func ServiceBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceBrowser, error) {
 	c := new(ServiceBrowser)
 

@@ -6,11 +6,13 @@ import (
 	dbus "github.com/godbus/dbus/v5"
 )
 
+// An AddressResolver resolves Address to IP addresses
 type AddressResolver struct {
 	object       dbus.BusObject
 	FoundChannel chan Address
 }
 
+// AddressResolverNew creates a new AddressResolver
 func AddressResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*AddressResolver, error) {
 	c := new(AddressResolver)
 

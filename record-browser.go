@@ -6,12 +6,14 @@ import (
 	dbus "github.com/godbus/dbus/v5"
 )
 
+// A RecordBrowser is a browser for mDNS records
 type RecordBrowser struct {
 	object        dbus.BusObject
 	AddChannel    chan Record
 	RemoveChannel chan Record
 }
 
+// RecordBrowserNew creates a new mDNS record browser
 func RecordBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*RecordBrowser, error) {
 	c := new(RecordBrowser)
 

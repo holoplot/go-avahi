@@ -8,107 +8,41 @@ import (
 )
 
 const (
-	SERVER_INVALID     = 0 /* Invalid state (initial) */
-	SERVER_REGISTERING = 1 /* Host RRs are being registered */
-	SERVER_RUNNING     = 2 /* All host RRs have been established */
-	SERVER_COLLISION   = 3 /* There is a collision with a host RR. All host RRs have been withdrawn, the user should set a new host name via avahi_server_set_host_name() */
-	SERVER_FAILURE     = 4 /* Some fatal failure happened, the server is unable to proceed */
+	// ServerInvalid - Invalid state (initial)
+	ServerInvalid = 0
+	// ServerRegistering - Host RRs are being registered
+	ServerRegistering = 1
+	// ServerRunning - All host RRs have been established
+	ServerRunning = 2
+	// ServerCollision - There is a collision with a host RR. All host RRs have been withdrawn, the user should set a new host name via SetHostname()
+	ServerCollision = 3
+	// ServerFailure - Some fatal failure happened, the server is unable to proceed
+	ServerFailure = 4
 )
 
-const (
-	PROTO_INET   = 0  /* IPv4 */
-	PROTO_INET6  = 1  /* IPv6 */
-	PROTO_UNSPEC = -1 /* Unspecified/all protocol(s) */
-)
-
-const (
-	IF_UNSPEC = -1 /* Unspecified/all interface(s) */
-)
-
-type SignalEmitter interface {
-	dispatchSignal(signal *dbus.Signal) error
-	getObjectPath() dbus.ObjectPath
-	free()
-}
-
+// A Server is the cental object of an Avahi connection
 type Server struct {
 	conn          *dbus.Conn
 	object        dbus.BusObject
 	signalChannel chan *dbus.Signal
-	quitChannel   chan bool
+	quitChannel   chan struct{}
 
 	mutex          sync.Mutex
-	signalEmitters map[dbus.ObjectPath]SignalEmitter
+	signalEmitters map[dbus.ObjectPath]signalEmitter
 }
 
-type Domain struct {
-	Interface int32
-	Protocol  int32
-	Domain    string
-	Flags     uint32
-}
-
-type HostName struct {
-	Interface int32
-	Protocol  int32
-	Name      string
-	Aprotocol int32
-	Address   string
-	Flags     uint32
-}
-
-type Address struct {
-	Interface int32
-	Protocol  int32
-	Aprotocol int32
-	Address   string
-	Name      string
-	Flags     uint32
-}
-
-type ServiceType struct {
-	Interface int32
-	Protocol  int32
-	Type      string
-	Domain    string
-	Flags     uint32
-}
-
-type Service struct {
-	Interface int32
-	Protocol  int32
-	Name      string
-	Type      string
-	Domain    string
-	Host      string
-	Aprotocol int32
-	Address   string
-	Port      int16
-	Txt       [][]byte
-	Flags     uint32
-}
-
-type Record struct {
-	Interface int32
-	Protocol  int32
-	Name      string
-	Class     int16
-	Type      int16
-	Rdata     []byte
-	Flags     uint32
-}
-
+// ServerNew returns a new Server object
 func ServerNew(conn *dbus.Conn) (*Server, error) {
 	c := new(Server)
 	c.conn = conn
 	c.object = conn.Object("org.freedesktop.Avahi", dbus.ObjectPath("/"))
 	c.signalChannel = make(chan *dbus.Signal, 10)
-	c.quitChannel = make(chan bool)
+	c.quitChannel = make(chan struct{})
 
 	c.conn.Signal(c.signalChannel)
 	c.conn.BusObject().Call("org.freedesktop.DBus.AddMatch", 0, "type='signal',interface='org.freedesktop.Avahi.*'")
 
-	c.signalEmitters = make(map[dbus.ObjectPath]SignalEmitter)
+	c.signalEmitters = make(map[dbus.ObjectPath]signalEmitter)
 
 	go func() {
 		for {
@@ -135,36 +69,26 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 	return c, nil
 }
 
+// Close closes the connection to a server
 func (c *Server) Close() {
-	<-c.quitChannel
-
-	c.mutex.Lock()
-	for path, obj := range c.signalEmitters {
-		obj.free()
-		delete(c.signalEmitters, path)
-	}
-	c.mutex.Unlock()
-
-	c.conn.Close()
-}
-
-func (c *Server) signalEmitterFree(e SignalEmitter) {
-	o := e.getObjectPath()
-	e.free()
+	c.quitChannel <- struct{}{}
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	_, ok := c.signalEmitters[o]
-	if ok {
-		delete(c.signalEmitters, o)
+	for path, obj := range c.signalEmitters {
+		obj.free()
+		delete(c.signalEmitters, path)
 	}
+
+	c.conn.Close()
 }
 
 func (c *Server) interfaceForMember(method string) string {
 	return fmt.Sprintf("%s.%s", "org.freedesktop.Avahi.Server", method)
 }
 
+// EntryGroupNew returns a new and empty EntryGroup
 func (c *Server) EntryGroupNew() (*EntryGroup, error) {
 	var o dbus.ObjectPath
 
@@ -186,33 +110,38 @@ func (c *Server) EntryGroupNew() (*EntryGroup, error) {
 	return r, nil
 }
 
+// EntryGroupFree frees an entry group and releases its resources on the service
 func (c *Server) EntryGroupFree(r *EntryGroup) {
 	c.signalEmitterFree(r)
 }
 
-func (c *Server) ResolveHostName(interface_ int32, protocol int32, name string, aprotocol int32, flags uint32) (reply HostName, err error) {
-	err = c.object.Call(c.interfaceForMember("ResolveHostName"), 0, interface_, protocol, name, aprotocol, flags).
+// ResolveHostName ...
+func (c *Server) ResolveHostName(iface, protocol int32, name string, aprotocol int32, flags uint32) (reply HostName, err error) {
+	err = c.object.Call(c.interfaceForMember("ResolveHostName"), 0, iface, protocol, name, aprotocol, flags).
 		Store(&reply.Interface, &reply.Protocol, &reply.Name, &reply.Aprotocol, &reply.Address, &reply.Flags)
 	return reply, err
 }
 
-func (c *Server) ResolveAddress(interface_ int32, protocol int32, address string, flags uint32) (reply Address, err error) {
-	err = c.object.Call(c.interfaceForMember("ResolveAddress"), 0, interface_, protocol, address, flags).
+// ResolveAddress ...
+func (c *Server) ResolveAddress(iface, protocol int32, address string, flags uint32) (reply Address, err error) {
+	err = c.object.Call(c.interfaceForMember("ResolveAddress"), 0, iface, protocol, address, flags).
 		Store(&reply.Interface, &reply.Protocol, &reply.Aprotocol, &reply.Address, &reply.Name, &reply.Flags)
 	return reply, err
 }
 
-func (c *Server) ResolveService(interface_ int32, protocol int32, name string, type_ string, domain string, aprotocol int32, flags uint32) (reply Service, err error) {
-	err = c.object.Call(c.interfaceForMember("ResolveService"), 0, interface_, protocol, name, type_, domain, aprotocol, flags).
+// ResolveService ...
+func (c *Server) ResolveService(iface, protocol int32, name, serviceType, domain string, aprotocol int32, flags uint32) (reply Service, err error) {
+	err = c.object.Call(c.interfaceForMember("ResolveService"), 0, iface, protocol, name, serviceType, domain, aprotocol, flags).
 		Store(&reply.Interface, &reply.Protocol, &reply.Name, &reply.Type, &reply.Domain,
 			&reply.Host, &reply.Aprotocol, &reply.Address, &reply.Port, &reply.Txt, &reply.Flags)
 	return reply, err
 }
 
-func (c *Server) DomainBrowserNew(interface_ int32, protocol int32, domain string, btype int32, flags uint32) (*DomainBrowser, error) {
+// DomainBrowserNew ...
+func (c *Server) DomainBrowserNew(iface, protocol int32, domain string, btype, flags uint32) (*DomainBrowser, error) {
 	var o dbus.ObjectPath
 
-	err := c.object.Call(c.interfaceForMember("DomainBrowserNew"), 0, interface_, protocol, domain, btype, flags).Store(&o)
+	err := c.object.Call(c.interfaceForMember("DomainBrowserNew"), 0, iface, protocol, domain, btype, flags).Store(&o)
 	if err != nil {
 		return nil, err
 	}
@@ -225,17 +154,19 @@ func (c *Server) DomainBrowserNew(interface_ int32, protocol int32, domain strin
 	return r, nil
 }
 
+// DomainBrowserFree ...
 func (c *Server) DomainBrowserFree(r *DomainBrowser) {
 	c.signalEmitterFree(r)
 }
 
-func (c *Server) ServiceTypeBrowserNew(interface_ int32, protocol int32, domain string, flags uint32) (*ServiceTypeBrowser, error) {
+// ServiceTypeBrowserNew ...
+func (c *Server) ServiceTypeBrowserNew(iface, protocol int32, domain string, flags uint32) (*ServiceTypeBrowser, error) {
 	var o dbus.ObjectPath
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	err := c.object.Call(c.interfaceForMember("ServiceTypeBrowserNew"), 0, interface_, protocol, domain, flags).Store(&o)
+	err := c.object.Call(c.interfaceForMember("ServiceTypeBrowserNew"), 0, iface, protocol, domain, flags).Store(&o)
 	if err != nil {
 		return nil, err
 	}
@@ -250,17 +181,19 @@ func (c *Server) ServiceTypeBrowserNew(interface_ int32, protocol int32, domain 
 	return r, nil
 }
 
+// ServiceTypeBrowserFree ...
 func (c *Server) ServiceTypeBrowserFree(r *ServiceTypeBrowser) {
 	c.signalEmitterFree(r)
 }
 
-func (c *Server) ServiceBrowserNew(interface_ int32, protocol int32, type_ string, domain string, flags uint32) (*ServiceBrowser, error) {
+// ServiceBrowserNew ...
+func (c *Server) ServiceBrowserNew(iface, protocol int32, serviceType string, domain string, flags uint32) (*ServiceBrowser, error) {
 	var o dbus.ObjectPath
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	err := c.object.Call(c.interfaceForMember("ServiceBrowserNew"), 0, interface_, protocol, type_, domain, flags).Store(&o)
+	err := c.object.Call(c.interfaceForMember("ServiceBrowserNew"), 0, iface, protocol, serviceType, domain, flags).Store(&o)
 	if err != nil {
 		return nil, err
 	}
@@ -275,17 +208,19 @@ func (c *Server) ServiceBrowserNew(interface_ int32, protocol int32, type_ strin
 	return r, nil
 }
 
+// ServiceBrowserFree ...
 func (c *Server) ServiceBrowserFree(r *ServiceBrowser) {
 	c.signalEmitterFree(r)
 }
 
-func (c *Server) ServiceResolverNew(interface_ int32, protocol int32, name string, type_ string, domain string, aprotocol int32, flags uint32) (*ServiceResolver, error) {
+// ServiceResolverNew ...
+func (c *Server) ServiceResolverNew(iface, protocol int32, name, serviceType, domain string, aprotocol int32, flags uint32) (*ServiceResolver, error) {
 	var o dbus.ObjectPath
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	err := c.object.Call(c.interfaceForMember("ServiceResolverNew"), 0, interface_, protocol, name, type_, domain, aprotocol, flags).Store(&o)
+	err := c.object.Call(c.interfaceForMember("ServiceResolverNew"), 0, iface, protocol, name, serviceType, domain, aprotocol, flags).Store(&o)
 	if err != nil {
 		return nil, err
 	}
@@ -300,17 +235,19 @@ func (c *Server) ServiceResolverNew(interface_ int32, protocol int32, name strin
 	return r, nil
 }
 
+// ServiceResolverFree ...
 func (c *Server) ServiceResolverFree(r *ServiceResolver) {
 	c.signalEmitterFree(r)
 }
 
-func (c *Server) HostNameResolverNew(interface_ int32, protocol int32, name string, aprotocol int32, flags uint32) (*HostNameResolver, error) {
+// HostNameResolverNew ...
+func (c *Server) HostNameResolverNew(iface, protocol int32, name string, aprotocol int32, flags uint32) (*HostNameResolver, error) {
 	var o dbus.ObjectPath
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	err := c.object.Call(c.interfaceForMember("HostNameResolverNew"), 0, interface_, protocol, name, aprotocol, flags).Store(&o)
+	err := c.object.Call(c.interfaceForMember("HostNameResolverNew"), 0, iface, protocol, name, aprotocol, flags).Store(&o)
 	if err != nil {
 		return nil, err
 	}
@@ -325,13 +262,14 @@ func (c *Server) HostNameResolverNew(interface_ int32, protocol int32, name stri
 	return r, nil
 }
 
-func (c *Server) AddressResolverNew(interface_ int32, protocol int32, address string, flags uint32) (*AddressResolver, error) {
+// AddressResolverNew ...
+func (c *Server) AddressResolverNew(iface, protocol int32, address string, flags uint32) (*AddressResolver, error) {
 	var o dbus.ObjectPath
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	err := c.object.Call(c.interfaceForMember("AddressResolverNew"), 0, interface_, protocol, address, flags).Store(&o)
+	err := c.object.Call(c.interfaceForMember("AddressResolverNew"), 0, iface, protocol, address, flags).Store(&o)
 	if err != nil {
 		return nil, err
 	}
@@ -346,17 +284,19 @@ func (c *Server) AddressResolverNew(interface_ int32, protocol int32, address st
 	return r, nil
 }
 
+// AddressResolverFree ...
 func (c *Server) AddressResolverFree(r *AddressResolver) {
 	c.signalEmitterFree(r)
 }
 
-func (c *Server) RecordBrowserNew(interface_ int32, protocol int32, name string, class int16, type_ int16, flags uint32) (*RecordBrowser, error) {
+// RecordBrowserNew ...
+func (c *Server) RecordBrowserNew(iface, protocol int32, name string, class int16, recordType int16, flags uint32) (*RecordBrowser, error) {
 	var o dbus.ObjectPath
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	err := c.object.Call(c.interfaceForMember("RecordBrowserNew"), 0, interface_, protocol, name, class, type_, flags).Store(&o)
+	err := c.object.Call(c.interfaceForMember("RecordBrowserNew"), 0, iface, protocol, name, class, recordType, flags).Store(&o)
 	if err != nil {
 		return nil, err
 	}
@@ -371,10 +311,12 @@ func (c *Server) RecordBrowserNew(interface_ int32, protocol int32, name string,
 	return r, nil
 }
 
+// RecordBrowserFree ...
 func (c *Server) RecordBrowserFree(r *RecordBrowser) {
 	c.signalEmitterFree(r)
 }
 
+// GetAPIVersion ...
 func (c *Server) GetAPIVersion() (int32, error) {
 	var i int32
 
@@ -386,6 +328,7 @@ func (c *Server) GetAPIVersion() (int32, error) {
 	return i, nil
 }
 
+// GetAlternativeHostName ...
 func (c *Server) GetAlternativeHostName(name string) (string, error) {
 	var s string
 
@@ -397,6 +340,7 @@ func (c *Server) GetAlternativeHostName(name string) (string, error) {
 	return s, nil
 }
 
+// GetAlternativeServiceName ...
 func (c *Server) GetAlternativeServiceName(name string) (string, error) {
 	var s string
 
@@ -408,6 +352,7 @@ func (c *Server) GetAlternativeServiceName(name string) (string, error) {
 	return s, nil
 }
 
+// GetDomainName ...
 func (c *Server) GetDomainName() (string, error) {
 	var s string
 
@@ -419,6 +364,7 @@ func (c *Server) GetDomainName() (string, error) {
 	return s, nil
 }
 
+// GetHostName ...
 func (c *Server) GetHostName() (string, error) {
 	var s string
 
@@ -430,6 +376,7 @@ func (c *Server) GetHostName() (string, error) {
 	return s, nil
 }
 
+// GetHostNameFqdn ...
 func (c *Server) GetHostNameFqdn() (string, error) {
 	var s string
 
@@ -441,6 +388,7 @@ func (c *Server) GetHostNameFqdn() (string, error) {
 	return s, nil
 }
 
+// GetLocalServiceCookie ...
 func (c *Server) GetLocalServiceCookie() (int32, error) {
 	var i int32
 
@@ -452,6 +400,7 @@ func (c *Server) GetLocalServiceCookie() (int32, error) {
 	return i, nil
 }
 
+// GetNetworkInterfaceIndexByName -...
 func (c *Server) GetNetworkInterfaceIndexByName(name string) (int32, error) {
 	var i int32
 
@@ -463,6 +412,7 @@ func (c *Server) GetNetworkInterfaceIndexByName(name string) (int32, error) {
 	return i, nil
 }
 
+// GetNetworkInterfaceNameByIndex ...
 func (c *Server) GetNetworkInterfaceNameByIndex(index int32) (string, error) {
 	var s string
 
@@ -474,6 +424,7 @@ func (c *Server) GetNetworkInterfaceNameByIndex(index int32) (string, error) {
 	return s, nil
 }
 
+// GetState ...
 func (c *Server) GetState() (int32, error) {
 	var i int32
 
@@ -485,6 +436,7 @@ func (c *Server) GetState() (int32, error) {
 	return i, nil
 }
 
+// GetVersionString ...
 func (c *Server) GetVersionString() (string, error) {
 	var s string
 
@@ -496,6 +448,7 @@ func (c *Server) GetVersionString() (string, error) {
 	return s, nil
 }
 
+// IsNSSSupportAvailable ...
 func (c *Server) IsNSSSupportAvailable() (bool, error) {
 	var b bool
 
@@ -507,6 +460,7 @@ func (c *Server) IsNSSSupportAvailable() (bool, error) {
 	return b, nil
 }
 
+// SetServerName ...
 func (c *Server) SetServerName(name string) error {
 	return c.object.Call(c.interfaceForMember("SetServerName"), 0, name).Err
 }

@@ -6,11 +6,13 @@ import (
 	dbus "github.com/godbus/dbus/v5"
 )
 
+// A ServiceResolver resolves mDNS services to IP addresses
 type ServiceResolver struct {
 	object       dbus.BusObject
 	FoundChannel chan Service
 }
 
+// ServiceResolverNew returns a new mDNS service resolver
 func ServiceResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceResolver, error) {
 	c := new(ServiceResolver)
 

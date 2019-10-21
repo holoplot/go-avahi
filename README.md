@@ -164,7 +164,7 @@ func main() {
 		log.Fatal("GetHostNameFqdn() failed:", err.Error())
 	}
 
-	err = eg.AddService(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, 0, hostname, "_my-nifty-service._tcp", "local", fqdn, 1234, nil)
+	err = eg.AddService(avahi.InterfaceUnspec, avahi.ProtoUnspec, 0, hostname, "_my-nifty-service._tcp", "local", fqdn, 1234, nil)
 	if err != nil {
 		log.Fatal("AddService() failed:", err.Error())
 	}

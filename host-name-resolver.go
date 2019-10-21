@@ -6,11 +6,13 @@ import (
 	dbus "github.com/godbus/dbus/v5"
 )
 
+// A HostNameResolver can resolve host names
 type HostNameResolver struct {
 	object       dbus.BusObject
 	FoundChannel chan HostName
 }
 
+// HostNameResolverNew returns a new HostNameResolver
 func HostNameResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*HostNameResolver, error) {
 	c := new(HostNameResolver)
 
