@@ -70,28 +70,28 @@ func main() {
 	}
 	log.Println("GetAPIVersion()", i)
 
-	hn, err := server.ResolveHostName(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, fqdn, avahi.PROTO_UNSPEC, 0)
+	hn, err := server.ResolveHostName(avahi.InterfaceUnspec, avahi.ProtoUnspec, fqdn, avahi.ProtoUnspec, 0)
 	if err != nil {
 		log.Fatal("ResolveHostName() failed", err.Error())
 	}
 	log.Println("ResolveHostName:", hn)
 
-	db, err := server.DomainBrowserNew(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, "", avahi.DOMAIN_BROWSER_TYPE_BROWSE, 0)
+	db, err := server.DomainBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "", avahi.DOMAIN_BROWSER_TYPE_BROWSE, 0)
 	if err != nil {
 		log.Fatal("DomainBrowserNew() failed", err.Error())
 	}
 
-	stb, err := server.ServiceTypeBrowserNew(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, "local", 0)
+	stb, err := server.ServiceTypeBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "local", 0)
 	if err != nil {
 		log.Fatal("ServiceTypeBrowserNew() failed", err.Error())
 	}
 
-	sb, err := server.ServiceBrowserNew(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, "_my-nifty-service._tcp._tcp", "local", 0)
+	sb, err := server.ServiceBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "_my-nifty-service._tcp._tcp", "local", 0)
 	if err != nil {
 		log.Fatal("ServiceBrowserNew() failed", err.Error())
 	}
 
-	sr, err := server.ServiceResolverNew(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, "", "_my-nifty-service._tcp._tcp", "local", avahi.PROTO_UNSPEC, 0)
+	sr, err := server.ServiceResolverNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "", "_my-nifty-service._tcp._tcp", "local", avahi.ProtoUnspec, 0)
 	if err != nil {
 		log.Fatal("ServiceResolverNew() failed", err.Error())
 	}
@@ -114,7 +114,7 @@ func main() {
 			log.Println("ServiceBrowser ADD: ", service)
 
 			service, err := server.ResolveService(service.Interface, service.Protocol, service.Name,
-							      service.Type, service.Domain, avahi.PROTO_UNSPEC, 0)
+							      service.Type, service.Domain, avahi.ProtoUnspec, 0)
 			if err == nil {
 				log.Println(" RESOLVED >>", service.Address)
 			}
