@@ -47,7 +47,7 @@ type Service struct {
 	Host      string
 	Aprotocol int32
 	Address   string
-	Port      int16
+	Port      uint16
 	Txt       [][]byte
 	Flags     uint32
 }
