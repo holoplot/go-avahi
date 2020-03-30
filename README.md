@@ -30,70 +30,71 @@ Note that you will need to have a working Avahi installation.
 package main
 
 import (
-	"github.com/godbus/dbus"
-	"guthub.com/holoplot/go-avahi"
+	"log"
+
+	"github.com/godbus/dbus/v5"
+	"github.com/holoplot/go-avahi"
 )
 
 func main() {
 	conn, err := dbus.SystemBus()
 	if err != nil {
-		log.Fatal("Cannot get system bus")
+		log.Fatalf("Cannot get system bus: %v", err)
 	}
 
 	server, err := avahi.ServerNew(conn)
 	if err != nil {
-		log.Fatal("Avahi new failed")
+		log.Fatalf("Avahi new failed: %v", err)
 	}
 
 	host, err := server.GetHostName()
 	if err != nil {
-		log.Fatal("GetHostName() failed")
+		log.Fatalf("GetHostName() failed: %v", err)
 	}
 	log.Println("GetHostName()", host)
 
 	fqdn, err := server.GetHostNameFqdn()
 	if err != nil {
-		log.Fatal("GetHostNameFqdn() failed")
+		log.Fatalf("GetHostNameFqdn() failed: %v", err)
 	}
 	log.Println("GetHostNameFqdn()", fqdn)
 
 	s, err := server.GetAlternativeHostName(host)
 	if err != nil {
-		log.Fatal("GetAlternativeHostName() failed")
+		log.Fatalf("GetAlternativeHostName() failed: %v", err)
 	}
 	log.Println("GetAlternativeHostName()", s)
 
-
 	i, err := server.GetAPIVersion()
 	if err != nil {
-		log.Fatal("GetAPIVersion() failed")
+		log.Fatalf("GetAPIVersion() failed: %v", err)
 	}
 	log.Println("GetAPIVersion()", i)
 
 	hn, err := server.ResolveHostName(avahi.InterfaceUnspec, avahi.ProtoUnspec, fqdn, avahi.ProtoUnspec, 0)
 	if err != nil {
-		log.Fatal("ResolveHostName() failed", err.Error())
+		log.Fatalf("ResolveHostName() failed: %v", err)
 	}
 	log.Println("ResolveHostName:", hn)
 
-	db, err := server.DomainBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "", avahi.DOMAIN_BROWSER_TYPE_BROWSE, 0)
+	db, err := server.DomainBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "", avahi.DomainBrowserTypeBrowseDefault, 0)
 	if err != nil {
-		log.Fatal("DomainBrowserNew() failed", err.Error())
+		log.Fatalf("DomainBrowserNew() failed: %v", err)
 	}
 
 	stb, err := server.ServiceTypeBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "local", 0)
 	if err != nil {
-		log.Fatal("ServiceTypeBrowserNew() failed", err.Error())
+		log.Fatalf("ServiceTypeBrowserNew() failed: %v", err)
 	}
 
-	sb, err := server.ServiceBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "_my-nifty-service._tcp._tcp", "local", 0)
+	sb, err := server.ServiceBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "_my-nifty-service._tcp", "local", 0)
 	if err != nil {
-		log.Fatal("ServiceBrowserNew() failed", err.Error())
+		log.Fatalf("ServiceBrowserNew() failed: %v", err)
 	}
 
-	sr, err := server.ServiceResolverNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "", "_my-nifty-service._tcp._tcp", "local", avahi.ProtoUnspec, 0)
+	sr, err := server.ServiceResolverNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, "", "_my-nifty-service._tcp", "local", avahi.ProtoUnspec, 0)
 	if err != nil {
-		log.Fatal("ServiceResolverNew() failed", err.Error())
+		log.Fatalf("ServiceResolverNew() failed: %v", err)
 	}
 
 	var domain avahi.Domain
@@ -114,7 +115,7 @@ func main() {
 			log.Println("ServiceBrowser ADD: ", service)
 
 			service, err := server.ResolveService(service.Interface, service.Protocol, service.Name,
-							      service.Type, service.Domain, avahi.ProtoUnspec, 0)
+				service.Type, service.Domain, avahi.ProtoUnspec, 0)
 			if err == nil {
 				log.Println(" RESOLVED >>", service.Address)
 			}
@@ -133,45 +134,46 @@ func main() {
 package main
 
 import (
-	"github.com/godbus/dbus"
-	"github.com/holoplot/go-avahi"
 	"log"
+
+	"github.com/godbus/dbus/v5"
+	"github.com/holoplot/go-avahi"
 )
 
 func main() {
 	conn, err := dbus.SystemBus()
 	if err != nil {
-		log.Fatal("Cannot get system bus")
+		log.Fatalf("Cannot get system bus: %v", err)
 	}
 
 	a, err := avahi.ServerNew(conn)
 	if err != nil {
-		log.Fatal("Avahi new failed")
+		log.Fatalf("Avahi new failed: %v", err)
 	}
 
 	eg, err := a.EntryGroupNew()
 	if err != nil {
-		log.Fatal("EntryGroupNew() failed:", err.Error())
+		log.Fatalf("EntryGroupNew() failed: %v", err)
 	}
 
 	hostname, err := a.GetHostName()
 	if err != nil {
-		log.Fatal("GetHostName() failed:", err.Error())
+		log.Fatalf("GetHostName() failed: %v", err)
 	}
 
 	fqdn, err := a.GetHostNameFqdn()
 	if err != nil {
-		log.Fatal("GetHostNameFqdn() failed:", err.Error())
+		log.Fatalf("GetHostNameFqdn() failed: %v", err)
 	}
 
 	err = eg.AddService(avahi.InterfaceUnspec, avahi.ProtoUnspec, 0, hostname, "_my-nifty-service._tcp", "local", fqdn, 1234, nil)
 	if err != nil {
-		log.Fatal("AddService() failed:", err.Error())
+		log.Fatalf("AddService() failed: %v", err)
 	}
 
 	err = eg.Commit()
 	if err != nil {
-		log.Fatal("Commit() failed:", err.Error())
+		log.Fatalf("Commit() failed: %v", err)
 	}
 
 	log.Println("Entry published. Hit ^C to exit.")

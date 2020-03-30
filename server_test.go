@@ -2,6 +2,7 @@ package avahi
 
 import (
 	"testing"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -19,6 +20,30 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestNewClose(t *testing.T) {
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	a, err := ServerNew(conn)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	doneChannel := make(chan struct{})
+	go func() {
+		a.Close()
+		doneChannel <- struct{}{}
+	}()
+
+	select {
+	case <-time.After(2 * time.Second):
+		t.Fatal("Close() is deadlocked")
+	case <-doneChannel:
+	}
+}
+
 func TestBasic(t *testing.T) {
 	conn, err := dbus.SystemBus()
 	if err != nil {
@@ -27,18 +52,18 @@ func TestBasic(t *testing.T) {
 
 	a, err := ServerNew(conn)
 	if err != nil {
-		t.Fatal("Avahi new failed")
+		t.Fatalf("Avahi new failed: %v", err)
 	}
 
 	s, err := a.GetHostName()
 	if err != nil {
-		t.Fatal("GetHostName() failed")
+		t.Fatalf("GetHostName() failed: %v", err)
 	}
 	t.Log("GetHostName()", s)
 
 	s, err = a.GetAlternativeHostName(s)
 	if err != nil {
-		t.Fatal("GetAlternativeHostName() failed")
+		t.Fatalf("GetAlternativeHostName() failed: %v", err)
 	}
 	t.Log("GetAlternativeHostName()", s)
 
@@ -46,19 +71,19 @@ func TestBasic(t *testing.T) {
 
 	i, err := a.GetAPIVersion()
 	if err != nil {
-		t.Fatal("GetAPIVersion() failed")
+		t.Fatalf("GetAPIVersion() failed: %v", err)
 	}
 	t.Log("GetAPIVersion()", i)
 
 	s, err = a.GetNetworkInterfaceNameByIndex(1)
 	if err != nil {
-		t.Fatal("GetNetworkInterfaceNameByIndex() failed")
+		t.Fatalf("GetNetworkInterfaceNameByIndex() failed: %v", err)
 	}
 	t.Log("GetNetworkInterfaceNameByIndex()", s)
 
 	i, err = a.GetNetworkInterfaceIndexByName(s)
 	if err != nil {
-		t.Fatal("GetNetworkInterfaceIndexByName() failed")
+		t.Fatalf("GetNetworkInterfaceIndexByName() failed: %v", err)
 	}
 	if i != 1 {
 		t.Fatal("GetNetworkInterfaceIndexByName() returned wrong index")
@@ -69,12 +94,12 @@ func TestBasic(t *testing.T) {
 
 	egc, err := a.EntryGroupNew()
 	if err != nil {
-		t.Fatal("EntryGroupNew() failed")
+		t.Fatalf("EntryGroupNew() failed: %v", err)
 	}
 
 	b, err := egc.IsEmpty()
 	if err != nil {
-		t.Fatal("egc.IsEmpty() failed")
+		t.Fatalf("egc.IsEmpty() failed: %v", err)
 	}
 	if b != true {
 		t.Fatal("Entry group must initially be empty")
