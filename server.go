@@ -138,7 +138,7 @@ func (c *Server) ResolveService(iface, protocol int32, name, serviceType, domain
 }
 
 // DomainBrowserNew ...
-func (c *Server) DomainBrowserNew(iface, protocol int32, domain string, btype, flags uint32) (*DomainBrowser, error) {
+func (c *Server) DomainBrowserNew(iface, protocol int32, domain string, btype int32, flags uint32) (*DomainBrowser, error) {
 	var o dbus.ObjectPath
 
 	err := c.object.Call(c.interfaceForMember("DomainBrowserNew"), 0, iface, protocol, domain, btype, flags).Store(&o)
