@@ -18,8 +18,8 @@ func ServiceBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceBrowser, 
 	c := new(ServiceBrowser)
 
 	c.object = conn.Object("org.freedesktop.Avahi.ServiceBrowser", path)
-	c.AddChannel = make(chan Service, 10)
-	c.RemoveChannel = make(chan Service, 10)
+	c.AddChannel = make(chan Service)
+	c.RemoveChannel = make(chan Service)
 
 	return c, nil
 }

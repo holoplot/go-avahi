@@ -17,7 +17,7 @@ func HostNameResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*HostNameResolv
 	c := new(HostNameResolver)
 
 	c.object = conn.Object("org.freedesktop.Avahi.HostNameResolver", path)
-	c.FoundChannel = make(chan HostName, 10)
+	c.FoundChannel = make(chan HostName)
 
 	return c, nil
 }

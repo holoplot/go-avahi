@@ -31,8 +31,8 @@ func DomainBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*DomainBrowser, er
 	c := new(DomainBrowser)
 
 	c.object = conn.Object("org.freedesktop.Avahi.DomainBrowser", path)
-	c.AddChannel = make(chan Domain, 10)
-	c.RemoveChannel = make(chan Domain, 10)
+	c.AddChannel = make(chan Domain)
+	c.RemoveChannel = make(chan Domain)
 
 	return c, nil
 }
