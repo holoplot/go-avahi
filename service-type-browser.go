@@ -11,6 +11,7 @@ type ServiceTypeBrowser struct {
 	object        dbus.BusObject
 	AddChannel    chan ServiceType
 	RemoveChannel chan ServiceType
+	closeCh       chan struct{}
 }
 
 // ServiceTypeBrowserNew creates a new browser for mDNS service types
@@ -20,6 +21,7 @@ func ServiceTypeBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceTypeB
 	c.object = conn.Object("org.freedesktop.Avahi.ServiceTypeBrowser", path)
 	c.AddChannel = make(chan ServiceType)
 	c.RemoveChannel = make(chan ServiceType)
+	c.closeCh = make(chan struct{})
 
 	return c, nil
 }
@@ -29,6 +31,7 @@ func (c *ServiceTypeBrowser) interfaceForMember(method string) string {
 }
 
 func (c *ServiceTypeBrowser) free() {
+	close(c.closeCh)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -45,9 +48,15 @@ func (c *ServiceTypeBrowser) dispatchSignal(signal *dbus.Signal) error {
 		}
 
 		if signal.Name == c.interfaceForMember("ItemNew") {
-			c.AddChannel <- serviceType
+			select {
+			case c.AddChannel <- serviceType:
+			case <-c.closeCh:
+			}
 		} else {
-			c.RemoveChannel <- serviceType
+			select {
+			case c.RemoveChannel <- serviceType:
+			case <-c.closeCh:
+			}
 		}
 	}
 

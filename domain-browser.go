@@ -11,6 +11,7 @@ type DomainBrowser struct {
 	object        dbus.BusObject
 	AddChannel    chan Domain
 	RemoveChannel chan Domain
+	closeCh       chan struct{}
 }
 
 const (
@@ -42,6 +43,7 @@ func (c *DomainBrowser) interfaceForMember(method string) string {
 }
 
 func (c *DomainBrowser) free() {
+	close(c.closeCh)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -58,9 +60,15 @@ func (c *DomainBrowser) dispatchSignal(signal *dbus.Signal) error {
 		}
 
 		if signal.Name == c.interfaceForMember("ItemNew") {
-			c.AddChannel <- domain
+			select {
+			case c.AddChannel <- domain:
+			case <-c.closeCh:
+			}
 		} else {
-			c.RemoveChannel <- domain
+			select {
+			case c.RemoveChannel <- domain:
+			case <-c.closeCh:
+			}
 		}
 	}
 

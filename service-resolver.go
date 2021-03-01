@@ -10,6 +10,7 @@ import (
 type ServiceResolver struct {
 	object       dbus.BusObject
 	FoundChannel chan Service
+	closeCh      chan struct{}
 }
 
 // ServiceResolverNew returns a new mDNS service resolver
@@ -18,6 +19,7 @@ func ServiceResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceResolver
 
 	c.object = conn.Object("org.freedesktop.Avahi.ServiceResolver", path)
 	c.FoundChannel = make(chan Service)
+	c.closeCh = make(chan struct{})
 
 	return c, nil
 }
@@ -27,6 +29,7 @@ func (c *ServiceResolver) interfaceForMember(method string) string {
 }
 
 func (c *ServiceResolver) free() {
+	close(c.closeCh)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -45,7 +48,10 @@ func (c *ServiceResolver) dispatchSignal(signal *dbus.Signal) error {
 			return err
 		}
 
-		c.FoundChannel <- service
+		select {
+		case c.FoundChannel <- service:
+		case <-c.closeCh:
+		}
 	}
 
 	return nil

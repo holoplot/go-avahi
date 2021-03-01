@@ -10,6 +10,7 @@ import (
 type AddressResolver struct {
 	object       dbus.BusObject
 	FoundChannel chan Address
+	closeCh      chan struct{}
 }
 
 // AddressResolverNew creates a new AddressResolver
@@ -27,6 +28,7 @@ func (c *AddressResolver) interfaceForMember(method string) string {
 }
 
 func (c *AddressResolver) free() {
+	close(c.closeCh)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -44,7 +46,10 @@ func (c *AddressResolver) dispatchSignal(signal *dbus.Signal) error {
 			return err
 		}
 
-		c.FoundChannel <- address
+		select {
+		case c.FoundChannel <- address:
+		case <-c.closeCh:
+		}
 	}
 
 	return nil

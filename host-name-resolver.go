@@ -10,6 +10,7 @@ import (
 type HostNameResolver struct {
 	object       dbus.BusObject
 	FoundChannel chan HostName
+	closeCh      chan struct{}
 }
 
 // HostNameResolverNew returns a new HostNameResolver
@@ -27,6 +28,7 @@ func (c *HostNameResolver) interfaceForMember(method string) string {
 }
 
 func (c *HostNameResolver) free() {
+	close(c.closeCh)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -44,7 +46,10 @@ func (c *HostNameResolver) dispatchSignal(signal *dbus.Signal) error {
 			return err
 		}
 
-		c.FoundChannel <- hostName
+		select {
+		case c.FoundChannel <- hostName:
+		case <-c.closeCh:
+		}
 	}
 
 	return nil
