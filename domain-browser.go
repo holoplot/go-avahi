@@ -44,6 +44,8 @@ func (c *DomainBrowser) interfaceForMember(method string) string {
 
 func (c *DomainBrowser) free() {
 	close(c.closeCh)
+	close(c.AddChannel)
+	close(c.RemoveChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 

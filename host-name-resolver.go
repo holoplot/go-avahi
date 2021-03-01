@@ -29,6 +29,7 @@ func (c *HostNameResolver) interfaceForMember(method string) string {
 
 func (c *HostNameResolver) free() {
 	close(c.closeCh)
+	close(c.FoundChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 

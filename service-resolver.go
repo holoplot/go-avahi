@@ -30,6 +30,7 @@ func (c *ServiceResolver) interfaceForMember(method string) string {
 
 func (c *ServiceResolver) free() {
 	close(c.closeCh)
+	close(c.FoundChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 

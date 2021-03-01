@@ -32,6 +32,8 @@ func (c *ServiceTypeBrowser) interfaceForMember(method string) string {
 
 func (c *ServiceTypeBrowser) free() {
 	close(c.closeCh)
+	close(c.AddChannel)
+	close(c.RemoveChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 

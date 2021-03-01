@@ -29,6 +29,7 @@ func (c *AddressResolver) interfaceForMember(method string) string {
 
 func (c *AddressResolver) free() {
 	close(c.closeCh)
+	close(c.FoundChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
