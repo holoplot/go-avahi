@@ -44,8 +44,6 @@ func (c *DomainBrowser) interfaceForMember(method string) string {
 
 func (c *DomainBrowser) free() {
 	close(c.closeCh)
-	close(c.AddChannel)
-	close(c.RemoveChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -65,11 +63,15 @@ func (c *DomainBrowser) dispatchSignal(signal *dbus.Signal) error {
 			select {
 			case c.AddChannel <- domain:
 			case <-c.closeCh:
+				close(c.AddChannel)
+				close(c.RemoveChannel)
 			}
 		} else {
 			select {
 			case c.RemoveChannel <- domain:
 			case <-c.closeCh:
+				close(c.AddChannel)
+				close(c.RemoveChannel)
 			}
 		}
 	}
