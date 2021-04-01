@@ -30,7 +30,6 @@ func (c *ServiceResolver) interfaceForMember(method string) string {
 
 func (c *ServiceResolver) free() {
 	close(c.closeCh)
-	close(c.FoundChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -52,6 +51,7 @@ func (c *ServiceResolver) dispatchSignal(signal *dbus.Signal) error {
 		select {
 		case c.FoundChannel <- service:
 		case <-c.closeCh:
+			close(c.FoundChannel)
 		}
 	}
 

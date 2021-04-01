@@ -29,7 +29,6 @@ func (c *AddressResolver) interfaceForMember(method string) string {
 
 func (c *AddressResolver) free() {
 	close(c.closeCh)
-	close(c.FoundChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -50,6 +49,7 @@ func (c *AddressResolver) dispatchSignal(signal *dbus.Signal) error {
 		select {
 		case c.FoundChannel <- address:
 		case <-c.closeCh:
+			close(c.FoundChannel)
 		}
 	}
 

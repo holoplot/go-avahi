@@ -29,7 +29,6 @@ func (c *HostNameResolver) interfaceForMember(method string) string {
 
 func (c *HostNameResolver) free() {
 	close(c.closeCh)
-	close(c.FoundChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -50,6 +49,7 @@ func (c *HostNameResolver) dispatchSignal(signal *dbus.Signal) error {
 		select {
 		case c.FoundChannel <- hostName:
 		case <-c.closeCh:
+			close(c.FoundChannel)
 		}
 	}
 

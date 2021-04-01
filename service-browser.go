@@ -31,8 +31,6 @@ func (c *ServiceBrowser) interfaceForMember(method string) string {
 
 func (c *ServiceBrowser) free() {
 	close(c.closeCh)
-	close(c.AddChannel)
-	close(c.RemoveChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -52,11 +50,15 @@ func (c *ServiceBrowser) dispatchSignal(signal *dbus.Signal) error {
 			select {
 			case c.AddChannel <- service:
 			case <-c.closeCh:
+				close(c.AddChannel)
+				close(c.RemoveChannel)
 			}
 		} else {
 			select {
 			case c.RemoveChannel <- service:
 			case <-c.closeCh:
+				close(c.AddChannel)
+				close(c.RemoveChannel)
 			}
 		}
 	}
