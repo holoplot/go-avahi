@@ -40,7 +40,7 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 	c.quitChannel = make(chan struct{})
 
 	c.conn.Signal(c.signalChannel)
-	c.conn.BusObject().Call("org.freedesktop.DBus.AddMatch", 0, "type='signal',interface='org.freedesktop.Avahi.*'")
+	c.conn.BusObject().Call("org.freedesktop.DBus.AddMatch", 0, "type='signal',interface='org.freedesktop.Avahi'")
 
 	c.signalEmitters = make(map[dbus.ObjectPath]signalEmitter)
 
