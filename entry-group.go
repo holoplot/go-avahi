@@ -87,10 +87,10 @@ func (c *EntryGroup) AddService(iface, protocol int32, flags uint32, name, servi
 	return c.object.Call(c.interfaceForMember("AddService"), 0, iface, protocol, flags, name, serviceType, domain, host, port, txt).Err
 }
 
-// AddServiceSubType adds a subtype for a service. The service should already be existent in the entry group.
+// AddServiceSubtype adds a subtype for a service. The service should already be existent in the entry group.
 // You may add as many subtypes for a service as you wish.
-func (c *EntryGroup) AddServiceSubType(iface, protocol int32, flags uint32, name, serviceType, domain, subtype string) error {
-	return c.object.Call(c.interfaceForMember("AddServiceSubType"), 0, iface, protocol, flags, name, serviceType, domain, subtype).Err
+func (c *EntryGroup) AddServiceSubtype(iface, protocol int32, flags uint32, name, serviceType, domain, subtype string) error {
+	return c.object.Call(c.interfaceForMember("AddServiceSubtype"), 0, iface, protocol, flags, name, serviceType, domain, subtype).Err
 }
 
 // UpdateServiceTxt apdates a TXT record for an existing service.
