@@ -17,7 +17,7 @@ type AddressResolver struct {
 func AddressResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*AddressResolver, error) {
 	c := new(AddressResolver)
 
-	c.object = conn.Object("org.freedesktop.Avahi.AddressResolver", path)
+	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.FoundChannel = make(chan Address)
 
 	return c, nil

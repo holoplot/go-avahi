@@ -17,7 +17,7 @@ type ServiceResolver struct {
 func ServiceResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceResolver, error) {
 	c := new(ServiceResolver)
 
-	c.object = conn.Object("org.freedesktop.Avahi.ServiceResolver", path)
+	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.FoundChannel = make(chan Service)
 	c.closeCh = make(chan struct{})
 

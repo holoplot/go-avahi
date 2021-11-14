@@ -17,7 +17,7 @@ type HostNameResolver struct {
 func HostNameResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*HostNameResolver, error) {
 	c := new(HostNameResolver)
 
-	c.object = conn.Object("org.freedesktop.Avahi.HostNameResolver", path)
+	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.FoundChannel = make(chan HostName)
 
 	return c, nil

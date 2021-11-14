@@ -18,7 +18,7 @@ type ServiceBrowser struct {
 func ServiceBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceBrowser, error) {
 	c := new(ServiceBrowser)
 
-	c.object = conn.Object("org.freedesktop.Avahi.ServiceBrowser", path)
+	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.AddChannel = make(chan Service)
 	c.RemoveChannel = make(chan Service)
 
