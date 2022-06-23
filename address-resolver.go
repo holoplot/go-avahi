@@ -19,6 +19,7 @@ func AddressResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*AddressResolver
 
 	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.FoundChannel = make(chan Address)
+	c.closeCh = make(chan struct{})
 
 	return c, nil
 }

@@ -21,6 +21,7 @@ func RecordBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*RecordBrowser, er
 	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.AddChannel = make(chan Record)
 	c.RemoveChannel = make(chan Record)
+	c.closeCh = make(chan struct{})
 
 	return c, nil
 }
