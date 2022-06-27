@@ -55,7 +55,7 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 				c.mutex.Lock()
 				for path, obj := range c.signalEmitters {
 					if path == signal.Path {
-						obj.dispatchSignal(signal)
+						_ = obj.dispatchSignal(signal)
 					}
 				}
 				c.mutex.Unlock()

@@ -21,6 +21,7 @@ func ServiceBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*ServiceBrowser, 
 	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.AddChannel = make(chan Service)
 	c.RemoveChannel = make(chan Service)
+	c.closeCh = make(chan struct{})
 
 	return c, nil
 }
