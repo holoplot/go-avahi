@@ -10,7 +10,7 @@ This Go package provides bindings for DBus interfaces exposed by the Avahi daemo
 Install the package like this:
 
 ```
-go get https://github.com/holoplot/go-avahi
+go get github.com/holoplot/go-avahi
 ```
 
 And then use it in your source code.
