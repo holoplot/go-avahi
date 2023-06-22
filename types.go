@@ -57,8 +57,8 @@ type Record struct {
 	Interface int32
 	Protocol  int32
 	Name      string
-	Class     int16
-	Type      int16
+	Class     uint16
+	Type      uint16
 	Rdata     []byte
 	Flags     uint32
 }

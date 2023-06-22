@@ -290,7 +290,7 @@ func (c *Server) AddressResolverFree(r *AddressResolver) {
 }
 
 // RecordBrowserNew ...
-func (c *Server) RecordBrowserNew(iface, protocol int32, name string, class int16, recordType int16, flags uint32) (*RecordBrowser, error) {
+func (c *Server) RecordBrowserNew(iface, protocol int32, name string, class uint16, recordType uint16, flags uint32) (*RecordBrowser, error) {
 	var o dbus.ObjectPath
 
 	c.mutex.Lock()
