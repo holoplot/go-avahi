@@ -51,21 +51,10 @@ func (c *ServiceResolver) dispatchSignal(signal *dbus.Signal) error {
 		select {
 		case c.FoundChannel <- service:
 		case <-c.closeCh:
-			if !c.isChannelClosed(c.FoundChannel) {
-				close(c.FoundChannel)
-			}
+			close(c.FoundChannel)
+			c.closeCh = nil
 		}
 	}
 
 	return nil
-}
-
-// check if a provided channel is closed
-func (c *ServiceResolver) isChannelClosed(ch <-chan Service) bool {
-	select {
-	case <-ch:
-		return false
-	default:
-		return true
-	}
 }
