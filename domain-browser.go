@@ -64,18 +64,36 @@ func (c *DomainBrowser) dispatchSignal(signal *dbus.Signal) error {
 			select {
 			case c.AddChannel <- domain:
 			case <-c.closeCh:
-				close(c.AddChannel)
-				close(c.RemoveChannel)
+				if !c.isChannelClosed(c.AddChannel) {
+					close(c.AddChannel)
+				}
+				if !c.isChannelClosed(c.RemoveChannel) {
+					close(c.RemoveChannel)
+				}
 			}
 		} else {
 			select {
 			case c.RemoveChannel <- domain:
 			case <-c.closeCh:
-				close(c.AddChannel)
-				close(c.RemoveChannel)
+				if !c.isChannelClosed(c.AddChannel) {
+					close(c.AddChannel)
+				}
+				if !c.isChannelClosed(c.RemoveChannel) {
+					close(c.RemoveChannel)
+				}
 			}
 		}
 	}
 
 	return nil
+}
+
+// check if a provided channel is closed
+func (c *DomainBrowser) isChannelClosed(ch <-chan Domain) bool {
+	select {
+	case <-ch:
+		return false
+	default:
+		return true
+	}
 }
