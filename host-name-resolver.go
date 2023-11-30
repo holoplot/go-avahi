@@ -51,6 +51,7 @@ func (c *HostNameResolver) dispatchSignal(signal *dbus.Signal) error {
 		case c.FoundChannel <- hostName:
 		case <-c.closeCh:
 			close(c.FoundChannel)
+			c.closeCh = nil
 		}
 	}
 

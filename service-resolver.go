@@ -52,6 +52,7 @@ func (c *ServiceResolver) dispatchSignal(signal *dbus.Signal) error {
 		case c.FoundChannel <- service:
 		case <-c.closeCh:
 			close(c.FoundChannel)
+			c.closeCh = nil
 		}
 	}
 

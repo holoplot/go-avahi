@@ -51,6 +51,7 @@ func (c *AddressResolver) dispatchSignal(signal *dbus.Signal) error {
 		case c.FoundChannel <- address:
 		case <-c.closeCh:
 			close(c.FoundChannel)
+			c.closeCh = nil
 		}
 	}
 

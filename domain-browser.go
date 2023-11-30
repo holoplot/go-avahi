@@ -66,6 +66,7 @@ func (c *DomainBrowser) dispatchSignal(signal *dbus.Signal) error {
 			case <-c.closeCh:
 				close(c.AddChannel)
 				close(c.RemoveChannel)
+				c.closeCh = nil
 			}
 		} else {
 			select {
@@ -73,6 +74,7 @@ func (c *DomainBrowser) dispatchSignal(signal *dbus.Signal) error {
 			case <-c.closeCh:
 				close(c.AddChannel)
 				close(c.RemoveChannel)
+				c.closeCh = nil
 			}
 		}
 	}
