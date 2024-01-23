@@ -45,7 +45,6 @@ func (c *DomainBrowser) interfaceForMember(method string) string {
 
 func (c *DomainBrowser) free() {
 	close(c.closeCh)
-	c.closeCh = nil
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -54,9 +53,6 @@ func (c *DomainBrowser) getObjectPath() dbus.ObjectPath {
 }
 
 func (c *DomainBrowser) dispatchSignal(signal *dbus.Signal) error {
-	if c.closeCh == nil {
-		return nil
-	}
 	if signal.Name == c.interfaceForMember("ItemNew") || signal.Name == c.interfaceForMember("ItemRemove") {
 		var domain Domain
 		err := dbus.Store(signal.Body, &domain.Interface, &domain.Protocol, &domain.Domain, &domain.Flags)

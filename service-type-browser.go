@@ -32,7 +32,6 @@ func (c *ServiceTypeBrowser) interfaceForMember(method string) string {
 
 func (c *ServiceTypeBrowser) free() {
 	close(c.closeCh)
-	c.closeCh = nil
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -41,9 +40,6 @@ func (c *ServiceTypeBrowser) getObjectPath() dbus.ObjectPath {
 }
 
 func (c *ServiceTypeBrowser) dispatchSignal(signal *dbus.Signal) error {
-	if c.closeCh == nil {
-		return nil
-	}
 	if signal.Name == c.interfaceForMember("ItemNew") || signal.Name == c.interfaceForMember("ItemRemove") {
 		var serviceType ServiceType
 		err := dbus.Store(signal.Body, &serviceType.Interface, &serviceType.Protocol, &serviceType.Type, &serviceType.Domain, &serviceType.Flags)

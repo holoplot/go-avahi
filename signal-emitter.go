@@ -10,7 +10,6 @@ type signalEmitter interface {
 
 func (c *Server) signalEmitterFree(e signalEmitter) {
 	o := e.getObjectPath()
-	e.free()
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -19,4 +18,6 @@ func (c *Server) signalEmitterFree(e signalEmitter) {
 	if ok {
 		delete(c.signalEmitters, o)
 	}
+
+	e.free()
 }

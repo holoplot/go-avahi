@@ -30,7 +30,6 @@ func (c *HostNameResolver) interfaceForMember(method string) string {
 
 func (c *HostNameResolver) free() {
 	close(c.closeCh)
-	c.closeCh = nil
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -39,9 +38,6 @@ func (c *HostNameResolver) getObjectPath() dbus.ObjectPath {
 }
 
 func (c *HostNameResolver) dispatchSignal(signal *dbus.Signal) error {
-	if c.closeCh == nil {
-		return nil
-	}
 	if signal.Name == c.interfaceForMember("Found") {
 		var hostName HostName
 		err := dbus.Store(signal.Body, &hostName.Interface, &hostName.Protocol,
