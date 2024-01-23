@@ -30,6 +30,7 @@ func (c *ServiceResolver) interfaceForMember(method string) string {
 
 func (c *ServiceResolver) free() {
 	close(c.closeCh)
+	c.closeCh = nil
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -38,6 +39,9 @@ func (c *ServiceResolver) getObjectPath() dbus.ObjectPath {
 }
 
 func (c *ServiceResolver) dispatchSignal(signal *dbus.Signal) error {
+	if c.closeCh == nil {
+		return nil
+	}
 	if signal.Name == c.interfaceForMember("Found") {
 		var service Service
 		err := dbus.Store(signal.Body, &service.Interface, &service.Protocol,

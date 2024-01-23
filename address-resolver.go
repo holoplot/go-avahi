@@ -30,6 +30,7 @@ func (c *AddressResolver) interfaceForMember(method string) string {
 
 func (c *AddressResolver) free() {
 	close(c.closeCh)
+	c.closeCh = nil
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -38,6 +39,9 @@ func (c *AddressResolver) getObjectPath() dbus.ObjectPath {
 }
 
 func (c *AddressResolver) dispatchSignal(signal *dbus.Signal) error {
+	if c.closeCh == nil {
+		return nil
+	}
 	if signal.Name == c.interfaceForMember("Found") {
 		var address Address
 		err := dbus.Store(signal.Body, &address.Interface, &address.Protocol,

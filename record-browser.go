@@ -32,6 +32,7 @@ func (c *RecordBrowser) interfaceForMember(method string) string {
 
 func (c *RecordBrowser) free() {
 	close(c.closeCh)
+	c.closeCh = nil
 	close(c.AddChannel)
 	close(c.RemoveChannel)
 	c.object.Call(c.interfaceForMember("Free"), 0)
@@ -42,6 +43,9 @@ func (c *RecordBrowser) getObjectPath() dbus.ObjectPath {
 }
 
 func (c *RecordBrowser) dispatchSignal(signal *dbus.Signal) error {
+	if c.closeCh == nil {
+		return nil
+	}
 	if signal.Name == c.interfaceForMember("ItemNew") || signal.Name == c.interfaceForMember("ItemRemove") {
 		var record Record
 		err := dbus.Store(signal.Body, &record.Interface, &record.Protocol, &record.Name,
