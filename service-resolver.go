@@ -29,7 +29,9 @@ func (c *ServiceResolver) interfaceForMember(method string) string {
 }
 
 func (c *ServiceResolver) free() {
-	close(c.closeCh)
+	if c.closeCh != nil {
+		close(c.closeCh)
+	}
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
