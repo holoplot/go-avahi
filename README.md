@@ -41,11 +41,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("Cannot get system bus: %v", err)
 	}
+	
+	// This is a globally shared connection. If there are other users of DBUS (whether in this library or others,
+	// this shouldn't be called until all users are done.
+	defer conn.Close()
 
 	server, err := avahi.ServerNew(conn)
 	if err != nil {
 		log.Fatalf("Avahi new failed: %v", err)
 	}
+	
+	defer server.Close()
 
 	host, err := server.GetHostName()
 	if err != nil {
