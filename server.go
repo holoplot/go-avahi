@@ -80,8 +80,6 @@ func (c *Server) Close() {
 		obj.free()
 		delete(c.signalEmitters, path)
 	}
-
-	c.conn.Close()
 }
 
 func (c *Server) interfaceForMember(method string) string {
