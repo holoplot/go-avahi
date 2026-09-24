@@ -11,7 +11,7 @@ type DomainBrowser struct {
 	object        dbus.BusObject
 	AddChannel    chan Domain
 	RemoveChannel chan Domain
-	closeCh       chan struct{}
+	closer        channelCloser
 }
 
 const (
@@ -34,7 +34,7 @@ func DomainBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*DomainBrowser, er
 	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.AddChannel = make(chan Domain)
 	c.RemoveChannel = make(chan Domain)
-	c.closeCh = make(chan struct{})
+	c.closer = newChannelCloser()
 
 	return c, nil
 }
@@ -44,9 +44,11 @@ func (c *DomainBrowser) interfaceForMember(method string) string {
 }
 
 func (c *DomainBrowser) free() {
-	if c.closeCh != nil {
-		close(c.closeCh)
-	}
+	c.closer.closeChannels(func() {
+		close(c.AddChannel)
+		close(c.RemoveChannel)
+	})
+
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -63,21 +65,9 @@ func (c *DomainBrowser) dispatchSignal(signal *dbus.Signal) error {
 		}
 
 		if signal.Name == c.interfaceForMember("ItemNew") {
-			select {
-			case c.AddChannel <- domain:
-			case <-c.closeCh:
-				close(c.AddChannel)
-				close(c.RemoveChannel)
-				c.closeCh = nil
-			}
+			send(&c.closer, c.AddChannel, domain)
 		} else {
-			select {
-			case c.RemoveChannel <- domain:
-			case <-c.closeCh:
-				close(c.AddChannel)
-				close(c.RemoveChannel)
-				c.closeCh = nil
-			}
+			send(&c.closer, c.RemoveChannel, domain)
 		}
 	}
 

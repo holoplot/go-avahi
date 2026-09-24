@@ -44,42 +44,51 @@ func ServerNew(conn *dbus.Conn) (*Server, error) {
 
 	c.signalEmitters = make(map[dbus.ObjectPath]signalEmitter)
 
-	go func() {
-		for {
-			select {
-			case signal, ok := <-c.signalChannel:
-				if !ok {
-					continue
-				}
-
-				c.mutex.Lock()
-				for path, obj := range c.signalEmitters {
-					if path == signal.Path {
-						_ = obj.dispatchSignal(signal)
-					}
-				}
-				c.mutex.Unlock()
-
-			case <-c.quitChannel:
-				return
-			}
-		}
-	}()
+	go c.dispatchLoop()
 
 	return c, nil
 }
 
+func (c *Server) dispatchLoop() {
+	for {
+		select {
+		case signal, ok := <-c.signalChannel:
+			if !ok {
+				continue
+			}
+
+			c.dispatchSignal(signal)
+
+		case <-c.quitChannel:
+			return
+		}
+	}
+}
+
+func (c *Server) dispatchSignal(signal *dbus.Signal) {
+	c.mutex.Lock()
+	obj, ok := c.signalEmitters[signal.Path]
+	c.mutex.Unlock()
+
+	// Dispatch without holding the mutex, so that a consumer that is not
+	// reading from the emitter's channels can still free it.
+	if ok {
+		_ = obj.dispatchSignal(signal)
+	}
+}
+
 // Close closes the connection to a server
 func (c *Server) Close() {
-	c.quitChannel <- struct{}{}
-
+	// Free the emitters first, so that a dispatchSignal() blocked on a
+	// consumer channel returns and the dispatch loop can see the quit request.
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
 	for path, obj := range c.signalEmitters {
 		obj.free()
 		delete(c.signalEmitters, path)
 	}
+	c.mutex.Unlock()
+
+	c.quitChannel <- struct{}{}
 }
 
 func (c *Server) interfaceForMember(method string) string {

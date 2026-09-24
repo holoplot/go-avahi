@@ -10,7 +10,7 @@ import (
 type AddressResolver struct {
 	object       dbus.BusObject
 	FoundChannel chan Address
-	closeCh      chan struct{}
+	closer       channelCloser
 }
 
 // AddressResolverNew creates a new AddressResolver
@@ -19,7 +19,7 @@ func AddressResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*AddressResolver
 
 	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.FoundChannel = make(chan Address)
-	c.closeCh = make(chan struct{})
+	c.closer = newChannelCloser()
 
 	return c, nil
 }
@@ -29,9 +29,10 @@ func (c *AddressResolver) interfaceForMember(method string) string {
 }
 
 func (c *AddressResolver) free() {
-	if c.closeCh != nil {
-		close(c.closeCh)
-	}
+	c.closer.closeChannels(func() {
+		close(c.FoundChannel)
+	})
+
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -49,12 +50,7 @@ func (c *AddressResolver) dispatchSignal(signal *dbus.Signal) error {
 			return err
 		}
 
-		select {
-		case c.FoundChannel <- address:
-		case <-c.closeCh:
-			close(c.FoundChannel)
-			c.closeCh = nil
-		}
+		send(&c.closer, c.FoundChannel, address)
 	}
 
 	return nil

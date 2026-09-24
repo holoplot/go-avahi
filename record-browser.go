@@ -11,7 +11,7 @@ type RecordBrowser struct {
 	object        dbus.BusObject
 	AddChannel    chan Record
 	RemoveChannel chan Record
-	closeCh       chan struct{}
+	closer        channelCloser
 }
 
 // RecordBrowserNew creates a new mDNS record browser
@@ -21,7 +21,7 @@ func RecordBrowserNew(conn *dbus.Conn, path dbus.ObjectPath) (*RecordBrowser, er
 	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.AddChannel = make(chan Record)
 	c.RemoveChannel = make(chan Record)
-	c.closeCh = make(chan struct{})
+	c.closer = newChannelCloser()
 
 	return c, nil
 }
@@ -31,9 +31,11 @@ func (c *RecordBrowser) interfaceForMember(method string) string {
 }
 
 func (c *RecordBrowser) free() {
-	close(c.closeCh)
-	close(c.AddChannel)
-	close(c.RemoveChannel)
+	c.closer.closeChannels(func() {
+		close(c.AddChannel)
+		close(c.RemoveChannel)
+	})
+
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -51,15 +53,9 @@ func (c *RecordBrowser) dispatchSignal(signal *dbus.Signal) error {
 		}
 
 		if signal.Name == c.interfaceForMember("ItemNew") {
-			select {
-			case c.AddChannel <- record:
-			case <-c.closeCh:
-			}
+			send(&c.closer, c.AddChannel, record)
 		} else {
-			select {
-			case c.RemoveChannel <- record:
-			case <-c.closeCh:
-			}
+			send(&c.closer, c.RemoveChannel, record)
 		}
 	}
 

@@ -10,7 +10,7 @@ import (
 type HostNameResolver struct {
 	object       dbus.BusObject
 	FoundChannel chan HostName
-	closeCh      chan struct{}
+	closer       channelCloser
 }
 
 // HostNameResolverNew returns a new HostNameResolver
@@ -19,7 +19,7 @@ func HostNameResolverNew(conn *dbus.Conn, path dbus.ObjectPath) (*HostNameResolv
 
 	c.object = conn.Object("org.freedesktop.Avahi", path)
 	c.FoundChannel = make(chan HostName)
-	c.closeCh = make(chan struct{})
+	c.closer = newChannelCloser()
 
 	return c, nil
 }
@@ -29,9 +29,10 @@ func (c *HostNameResolver) interfaceForMember(method string) string {
 }
 
 func (c *HostNameResolver) free() {
-	if c.closeCh != nil {
-		close(c.closeCh)
-	}
+	c.closer.closeChannels(func() {
+		close(c.FoundChannel)
+	})
+
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -49,12 +50,7 @@ func (c *HostNameResolver) dispatchSignal(signal *dbus.Signal) error {
 			return err
 		}
 
-		select {
-		case c.FoundChannel <- hostName:
-		case <-c.closeCh:
-			close(c.FoundChannel)
-			c.closeCh = nil
-		}
+		send(&c.closer, c.FoundChannel, hostName)
 	}
 
 	return nil

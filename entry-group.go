@@ -30,6 +30,7 @@ type EntryGroup struct {
 	conn               *dbus.Conn
 	object             dbus.BusObject
 	StateChangeChannel chan EntryGroupState
+	closer             channelCloser
 }
 
 // EntryGroupNew creates a new entry group
@@ -38,6 +39,7 @@ func EntryGroupNew(conn *dbus.Conn, path dbus.ObjectPath) (*EntryGroup, error) {
 	c.conn = conn
 	c.object = c.conn.Object("org.freedesktop.Avahi", path)
 	c.StateChangeChannel = make(chan EntryGroupState, 10)
+	c.closer = newChannelCloser()
 
 	return c, nil
 }
@@ -110,6 +112,10 @@ func (c *EntryGroup) AddRecord(iface, protocol int32, flags uint32, name string,
 }
 
 func (c *EntryGroup) free() {
+	c.closer.closeChannels(func() {
+		close(c.StateChangeChannel)
+	})
+
 	c.object.Call(c.interfaceForMember("Free"), 0)
 }
 
@@ -125,7 +131,7 @@ func (c *EntryGroup) dispatchSignal(signal *dbus.Signal) error {
 			return err
 		}
 
-		c.StateChangeChannel <- state
+		send(&c.closer, c.StateChangeChannel, state)
 	}
 
 	return nil
